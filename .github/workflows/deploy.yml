@@ -33,9 +33,17 @@ jobs:
           docker push ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$IMAGE_TAG
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
+      - name: Create Elastic Beanstalk Application Version
+        run: |
+          aws s3 cp app.zip s3://${{ secrets.S3_BUCKET_NAME }}/$IMAGE_TAG.zip
+          aws elasticbeanstalk create-application-version \
+            --application-name backend-elastic-beanstalk-app \
+            --version-label $IMAGE_TAG \
+            --source-bundle S3Bucket=${{ secrets.S3_BUCKET_NAME }},S3Key=$IMAGE_TAG.zip
+
       - name: Deploy Docker Image to Elastic Beanstalk
         run: |
           aws elasticbeanstalk update-environment \
-            --application-name ${{ secrets.ELASTIC_BEANSTALK_APP_NAME }} \
-            --environment-name ${{ secrets.ELASTIC_BEANSTALK_ENV_NAME }} \
+            --application-name backend-elastic-beanstalk-app \
+            --environment-name backend-elastic-beanstalk-env \
             --version-label $IMAGE_TAG
