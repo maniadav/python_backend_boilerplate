@@ -33,6 +33,10 @@ jobs:
           docker push ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$IMAGE_TAG
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
+      - name: Create Application Bundle
+        run: |
+          zip -r app.zip .
+
       - name: Create Elastic Beanstalk Application Version
         run: |
           aws s3 cp app.zip s3://${{ secrets.S3_BUCKET_NAME }}/$IMAGE_TAG.zip
