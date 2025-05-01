@@ -18,7 +18,9 @@ The workflow is triggered on every push to the `master` branch. It automates the
      - `AWS_ACCESS_KEY_ID`
      - `AWS_SECRET_ACCESS_KEY`
      - `AWS_REGION`
-   - This step is essential for authenticating with AWS services.
+     - `ECR_REPOSITORY_URL`
+     - `S3_BUCKET_NAME`
+   - This step is essential for authenticating with AWS services and accessing the required resources.
 
 3. **Login to Amazon ECR**
    - Logs in to Amazon Elastic Container Registry (ECR) using the AWS CLI.
@@ -62,3 +64,4 @@ The workflow is triggered on every push to the `master` branch. It automates the
 - The workflow assumes that the Elastic Beanstalk application and environment are already set up.
 - Ensure the S3 bucket specified in `S3_BUCKET_NAME` exists and is accessible.
 - The `Dockerfile.prod` should include all necessary configurations for running the application in production.
+- Ensure the application version specified in Elastic Beanstalk matches the version being deployed to avoid errors like "Incorrect application version."

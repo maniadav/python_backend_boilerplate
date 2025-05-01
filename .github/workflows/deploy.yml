@@ -27,11 +27,11 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          IMAGE_TAG=$(date +%Y%m%d%H%M%S)
-          docker build -f Dockerfile.prod -t backend-elastic-beanstalk-ecr:$IMAGE_TAG .
-          docker tag backend-elastic-beanstalk-ecr:$IMAGE_TAG ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$IMAGE_TAG
-          docker push ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$IMAGE_TAG
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          VERSION="deployment-$(date +%Y%m%d%H%M%S)"
+          docker build -f Dockerfile.prod -t backend-elastic-beanstalk-ecr:$VERSION .
+          docker tag backend-elastic-beanstalk-ecr:$VERSION ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$VERSION
+          docker push ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create Application Bundle
         run: |
@@ -39,15 +39,15 @@ jobs:
 
       - name: Create Elastic Beanstalk Application Version
         run: |
-          aws s3 cp app.zip s3://${{ secrets.S3_BUCKET_NAME }}/$IMAGE_TAG.zip
+          aws s3 cp app.zip s3://${{ secrets.S3_BUCKET_NAME }}/$VERSION.zip
           aws elasticbeanstalk create-application-version \
             --application-name backend-elastic-beanstalk-app \
-            --version-label $IMAGE_TAG \
-            --source-bundle S3Bucket=${{ secrets.S3_BUCKET_NAME }},S3Key=$IMAGE_TAG.zip
+            --version-label $VERSION \
+            --source-bundle S3Bucket=${{ secrets.S3_BUCKET_NAME }},S3Key=$VERSION.zip
 
       - name: Deploy Docker Image to Elastic Beanstalk
         run: |
           aws elasticbeanstalk update-environment \
             --application-name backend-elastic-beanstalk-app \
             --environment-name backend-elastic-beanstalk-env \
-            --version-label $IMAGE_TAG
+            --version-label $VERSION
