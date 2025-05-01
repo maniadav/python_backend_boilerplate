@@ -27,7 +27,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          VERSION="deployment-$(date +%Y%m%d%H%M%S)"
+          VERSION="Sample $(date +%Y%m%d%H%M%S)"
           docker build -f Dockerfile.prod -t backend-elastic-beanstalk-ecr:$VERSION .
           docker tag backend-elastic-beanstalk-ecr:$VERSION ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$VERSION
           docker push ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$VERSION
