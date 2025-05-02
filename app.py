@@ -10,6 +10,9 @@ def load_movies():
 
 import time
 
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "healthy"}), 200
 
 @app.route('/')
 def hello():

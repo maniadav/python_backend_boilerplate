@@ -28,11 +28,6 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           VERSION="Sample"
-          # Check if the version exists
-          aws elasticbeanstalk describe-application-versions \
-            --application-name backend-elastic-beanstalk-app \
-            --version-labels $VERSION
-          
           docker build -f Dockerfile.prod -t backend-elastic-beanstalk-ecr:$VERSION .
           docker tag backend-elastic-beanstalk-ecr:$VERSION ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$VERSION
           docker push ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$VERSION
@@ -42,10 +37,39 @@ jobs:
         run: |
           zip -r app.zip .
 
+      - name: Create Elastic Beanstalk Application Version
+        run: |
+          # First, delete the existing version if it exists
+          aws elasticbeanstalk delete-application-version \
+            --application-name backend-elastic-beanstalk-app \
+            --version-label "$VERSION" \
+            --delete-source-bundle \
+            --force-delete || true
+
+          # Upload the new application bundle
+          aws s3 cp app.zip "s3://${{ secrets.S3_BUCKET_NAME }}/Sample.zip"
+
+          # Create the new application version
+          aws elasticbeanstalk create-application-version \
+            --application-name backend-elastic-beanstalk-app \
+            --version-label "$VERSION" \
+            --source-bundle S3Bucket="${{ secrets.S3_BUCKET_NAME }}",S3Key="Sample.zip" \
+            --process
+
+      - name: Wait for Version Processing
+        run: |
+          aws elasticbeanstalk wait application-version-available \
+            --application-name backend-elastic-beanstalk-app \
+            --version-label "$VERSION"
+
       - name: Deploy to Elastic Beanstalk
         run: |
-          # Force update to version "Sample"
           aws elasticbeanstalk update-environment \
             --application-name backend-elastic-beanstalk-app \
             --environment-name backend-elastic-beanstalk-env \
-            --version-label $VERSION
+            --version-label "$VERSION"
+
+      - name: Wait for Environment Update
+        run: |
+          aws elasticbeanstalk wait environment-updated \
+            --environment-name backend-elastic-beanstalk-env
