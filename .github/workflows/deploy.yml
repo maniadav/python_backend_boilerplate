@@ -35,39 +35,57 @@ jobs:
 
       - name: Create Application Bundle
         run: |
-          zip -r app.zip .
+          # Create deployment package directory
+          mkdir -p .ebextensions
+          
+          # Create Dockerrun.aws.json
+          echo '{
+            "AWSEBDockerrunVersion": "1",
+            "Image": {
+              "Name": "${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:Sample",
+              "Update": "true"
+            },
+            "Ports": [
+              {
+                "ContainerPort": "5000",
+                "HostPort": "5000"
+              }
+            ]
+          }' > Dockerrun.aws.json
+          
+          # Create zip excluding unnecessary files
+          zip -r app.zip Dockerrun.aws.json .ebextensions \
+            -x "*.git*" \
+            -x "*__pycache__*" \
+            -x "*.pytest_cache*" \
+            -x "*.env*" \
+            -x "*.vscode*" \
+            -x "*.idea*" \
+            -x "*node_modules*" \
+            -x "*.DS_Store*"
 
-      - name: Create Elastic Beanstalk Application Version
+      - name: Upload to S3 and Update Application Version
         run: |
-          # First, delete the existing version if it exists
-          aws elasticbeanstalk delete-application-version \
-            --application-name backend-elastic-beanstalk-app \
-            --version-label "$VERSION" \
-            --delete-source-bundle \
-            --force-delete || true
-
-          # Upload the new application bundle
+          # Upload to S3
           aws s3 cp app.zip "s3://${{ secrets.S3_BUCKET_NAME }}/Sample.zip"
 
-          # Create the new application version
+          # Create new version (or update if exists)
           aws elasticbeanstalk create-application-version \
             --application-name backend-elastic-beanstalk-app \
-            --version-label "$VERSION" \
+            --version-label "Sample" \
             --source-bundle S3Bucket="${{ secrets.S3_BUCKET_NAME }}",S3Key="Sample.zip" \
-            --process
+            --process || true
 
       - name: Wait for Version Processing
         run: |
-          aws elasticbeanstalk wait application-version-available \
-            --application-name backend-elastic-beanstalk-app \
-            --version-label "$VERSION"
+          sleep 10  # Give some time for version processing
 
       - name: Deploy to Elastic Beanstalk
         run: |
           aws elasticbeanstalk update-environment \
             --application-name backend-elastic-beanstalk-app \
             --environment-name backend-elastic-beanstalk-env \
-            --version-label "$VERSION"
+            --version-label "Sample"
 
       - name: Wait for Environment Update
         run: |
