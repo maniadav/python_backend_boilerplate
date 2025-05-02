@@ -3,6 +3,9 @@ import json
 
 app = Flask(__name__)
 
+# Application version
+APP_VERSION = "1.0.0"
+
 # Load movie data from the JSON file
 def load_movies():
     with open('movies.json', 'r') as file:
@@ -12,7 +15,17 @@ import time
 
 @app.route('/health')
 def health_check():
-    return jsonify({"status": "healthy"}), 200
+    return jsonify({
+        "status": "healthy",
+        "version": APP_VERSION
+    }), 200
+
+@app.route('/version')
+def get_version():
+    return jsonify({
+        "version": APP_VERSION,
+        "name": "movie-api"
+    }), 200
 
 @app.route('/')
 def hello():

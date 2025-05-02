@@ -1,6 +1,6 @@
 flask-marshmallow>=0.15.0
 marshmallow-sqlalchemy>=0.29.0
 marshmallow>=3.0.0
-flask
+Flask==2.0.1
 redis
-gunicorn>=20.1.0
+gunicorn==20.1.0
