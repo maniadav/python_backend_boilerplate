@@ -13,10 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set deployment date
-        run: |
-          echo "DEPLOY_DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -32,6 +28,11 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           VERSION="Sample"
+          # Check if the version exists
+          aws elasticbeanstalk describe-application-versions \
+            --application-name backend-elastic-beanstalk-app \
+            --version-labels $VERSION
+          
           docker build -f Dockerfile.prod -t backend-elastic-beanstalk-ecr:$VERSION .
           docker tag backend-elastic-beanstalk-ecr:$VERSION ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$VERSION
           docker push ${{ secrets.ECR_REPOSITORY_URL }}/backend-elastic-beanstalk-ecr:$VERSION
@@ -41,16 +42,9 @@ jobs:
         run: |
           zip -r app.zip .
 
-      - name: Create Elastic Beanstalk Application Version
+      - name: Deploy to Elastic Beanstalk
         run: |
-          aws s3 cp app.zip s3://${{ secrets.S3_BUCKET_NAME }}/$VERSION.zip
-          aws elasticbeanstalk create-application-version \
-            --application-name backend-elastic-beanstalk-app \
-            --version-label $VERSION \
-            --source-bundle S3Bucket=${{ secrets.S3_BUCKET_NAME }},S3Key=$VERSION.zip
-
-      - name: Deploy Docker Image to Elastic Beanstalk
-        run: |
+          # Force update to version "Sample"
           aws elasticbeanstalk update-environment \
             --application-name backend-elastic-beanstalk-app \
             --environment-name backend-elastic-beanstalk-env \
